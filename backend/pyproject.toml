@@ -11,6 +11,7 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "elasticsearch>=8.14,<9",
+    "aiohttp>=3.9",  # AsyncElasticsearch's HTTP transport requires this explicitly
     "httpx>=0.27",
     "apscheduler>=3.10",
     "pydantic>=2.7",

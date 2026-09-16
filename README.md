@@ -50,11 +50,19 @@ REST APIs — abuse.ch now gates the REST APIs behind a free `auth.abuse.ch`
 account (a real, recent platform change caught and worked around while
 building this), but the bulk exports genuinely need nothing.
 
-IP-type indicators (and domains/URLs, via best-effort DNS resolution) are
-geolocated through [ip-api.com](https://ip-api.com/)'s free tier — no key,
-capped at 45 req/min, so the collector self-throttles to 40/min and reuses
-any geo data Elasticsearch already has for an IP rather than re-querying it
-every run.
+**IP-type indicators only** are geolocated, through [ip-api.com](https://ip-api.com/)'s
+free tier — no key, capped at 45 req/min, so the collector self-throttles to
+40/min and caches by IP address (shared across every indicator that
+resolves to it, not just re-fetched per document) so a run never re-queries
+an IP it already knows. New (never-before-seen) IPs beyond
+`TIP_GEO_MAX_NEW_LOOKUPS_PER_RUN` (default 150) simply wait for the next
+run rather than blocking this one for hours — a real problem caught while
+running this against live data: domains/URLs were originally also
+DNS-resolved for geo purposes, but many distinct malicious URLs sharing
+the same hosting infrastructure meant the same IP was being re-queried
+dozens of times per run. Scoped down to IP-only, cached by IP — both a
+performance fix and a more honest signal (shared hosting/CDNs make domain
+geolocation unreliable anyway).
 
 ## What this is (and isn't)
 

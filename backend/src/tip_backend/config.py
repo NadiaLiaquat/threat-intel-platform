@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     # limit is respected.
     geo_api_base_url: str = "http://ip-api.com/json"
     geo_requests_per_minute: int = 40
+    # Bounds a single collection run's worst-case time: any new (never
+    # before seen) IPs beyond this count just wait for the next run rather
+    # than making one run take hours against a 40/min rate limit.
+    geo_max_new_lookups_per_run: int = 150
 
     cors_allow_origins: list[str] = ["*"]
 

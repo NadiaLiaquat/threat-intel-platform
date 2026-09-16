@@ -15,3 +15,4 @@ dist-ssr/
 Thumbs.db
 .pv.log
 .pverr.log
+backend/build/
