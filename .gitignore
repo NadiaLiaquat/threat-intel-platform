@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+dist/
+dist-ssr/
+.env
+*.local
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.pv.log
+.pverr.log

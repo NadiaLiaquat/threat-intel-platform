@@ -1,0 +1,47 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: ./backend
+    command: uvicorn tip_backend.api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      - TIP_ELASTICSEARCH_URL=http://elasticsearch:9200
+    ports:
+      - "8000:8000"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  collector:
+    build: ./backend
+    command: python -m tip_backend.scheduler
+    environment:
+      - TIP_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - TIP_COLLECTION_INTERVAL_MINUTES=15
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+volumes:
+  es-data:
