@@ -18,7 +18,9 @@ class Settings(BaseSettings):
     # (not HTTPS) for non-commercial use — see geo.py for how the rate
     # limit is respected.
     geo_api_base_url: str = "http://ip-api.com/json"
-    geo_requests_per_minute: int = 40
+    # Kept below the nominal 45/min — real 429s showed up even at 40/min in
+    # practice (see geo.py's module docstring for why).
+    geo_requests_per_minute: int = 30
     # Bounds a single collection run's worst-case time: any new (never
     # before seen) IPs beyond this count just wait for the next run rather
     # than making one run take hours against a 40/min rate limit.

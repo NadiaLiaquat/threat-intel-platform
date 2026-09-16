@@ -21,6 +21,11 @@ from .storage import upsert_many
 
 logger = logging.getLogger(__name__)
 
+# No requests_per_minute passed here on purpose — GeoLocator reads
+# settings.geo_requests_per_minute itself when not overridden, so this
+# stays in sync with TIP_GEO_REQUESTS_PER_MINUTE rather than silently
+# ignoring it (an earlier version of this line hardcoded a value here that
+# the settings object never actually reached).
 _geo_locator = GeoLocator()
 
 
@@ -64,6 +69,8 @@ async def _enrich_geo(es: AsyncElasticsearch, indicators: list[Indicator]) -> No
     ip_indicators = [i for i in indicators if i.type == "ip" and i.geo is None]
     known = await _existing_geo(es, ip_indicators)
     new_lookups = 0
+    cap = settings.geo_max_new_lookups_per_run
+    cap_logged = False
 
     async with httpx.AsyncClient(timeout=5.0) as client:
         for ind in ip_indicators:
@@ -72,7 +79,15 @@ async def _enrich_geo(es: AsyncElasticsearch, indicators: list[Indicator]) -> No
                 ind.geo = cached
                 continue
 
-            if new_lookups >= settings.geo_max_new_lookups_per_run:
+            if new_lookups >= cap:
+                if not cap_logged:
+                    remaining = len(ip_indicators) - ip_indicators.index(ind)
+                    logger.info(
+                        "hit geo_max_new_lookups_per_run (%d); ~%d IPs deferred to a later run",
+                        cap,
+                        remaining,
+                    )
+                    cap_logged = True
                 continue  # picked up on a future run instead
 
             geo = await _geo_locator.lookup(ind.indicator, client=client)
